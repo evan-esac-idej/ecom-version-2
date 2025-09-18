@@ -380,141 +380,130 @@ try:
             placeholder.empty()
 except:
     st.empty()
-try:
-    with tabo:
-            import streamlit as st
-            import google.generativeai as genai
-            import os
 
-            st.subheader(" Chatbot com e-com web eventos")
-            st.caption("Um assistente convencional para o aplicativo e-com web eventos")
+with tabo:
+        import streamlit as st
+        import google.generativeai as genai
+        import os
 
-            # --- Configuração da API Key do Gemini ---
+        st.subheader(" Chatbot com e-com web eventos")
+        st.caption("Um assistente convencional para o aplicativo e-com web eventos")
 
-            # A forma mais segura de gerenciar a chave é através do st.secrets (para deploy)
-            # Para uso local, você pode usar o sidebar para inseri-la.
+        # --- Configuração da API Key do Gemini ---
 
-            # Tenta obter a chave a partir do st.secrets
+        # A forma mais segura de gerenciar a chave é através do st.secrets (para deploy)
+        # Para uso local, você pode usar o sidebar para inseri-la.
+
+        # Tenta obter a chave a partir do st.secrets
+        try:
+            api_key = st.secrets["GEMINI_API_KEY"]
+            genai.configure(api_key=api_key)
+        except (FileNotFoundError, KeyError):
+            st.empty()
+
+        # Se a chave não for fornecida, exibe um aviso e interrompe a execução
+        if not api_key:
+            st.info("Por favor, insira sua API Key do Google Gemini na barra lateral para começar.")
+            st.stop()
+
+
+        # --- Inicialização do Modelo e do Histórico da Conversa ---
+        # app.py (modificações em destaque)
+
+
+        # --- NOVO: Instrução Inicial (Contexto) atualizada ---
+        system_instruction = f"""
+        Você é o "Assistente EventsBot", um chatbot especialista no aplicativo web "e-com web  Eventos".
+        Sua função é responder a perguntas sobre as funcionalidades do aplicativo e sobre os resultados financeiros da empresa, com base ESTRITAMENTE nas informações fornecidas.
+    
+        REGRAS:
+        1.  **Persona:** Seja profissional, preciso e direto.
+        2.  **Base de Conhecimento:** NUNCA invente informações. Se a resposta não estiver no contexto que eu fornecer, diga "Não tenho essa informação na minha base de dados."
+        3.  **Segurança:** Nunca partilhe informações financeiras a menos que a pergunta seja explicitamente sobre finanças.
+        4.  **Foco:** Recuse educadamente responder a perguntas que não sejam sobre o e-com web eventos. Sugira que entre em contacto com a agência GHT.
+    
+        Aqui está a base de conhecimento sobre dos Dados:
+        Catálogo: {dados}
+        Mobiliário(Data,	Categorias,	Qtd,	Preço,	Valor): {dados['Mobiliário']}
+        Entretenimento(Data,	Categorias,	Qtd,	Preço,	Valor): {dados['entretenimento']}
+        alimentação(Data,	Categorias,	Qtd,	Preço,	Valor): {dados['alimentação']}
+        Banco de dados: {st.session_state.banco_dados}
+        carrinho: {st.session_state.carrinho}
+        Total de Vendas: {data_base['Valor'].sum()} Mts
+        ---
+    
+        ---
+    
+        Aqui está a base de conhecimento sobre os RESULTADOS FINANCEIROS:
+        ---
+    
+        ---
+        """
+        # --- Inicialização do Modelo e do Histórico da Conversa ---
+
+        MODEL_NAME = "gemini-1.5-flash-latest"
+
+        # MODIFICAÇÃO: Inicia o histórico com a instrução e uma primeira mensagem
+        if "messages" not in st.session_state:
+            st.session_state.messages = [
+                {"role": "assistant",
+                 "content": "Olá! Eu sou o Event, o seu assistente virtual para explorar o ecom-web. Como posso ajudar?"}
+            ]
+
+        # MODIFICAÇÃO: Passa o histórico inicial para o modelo
+        if "chat" not in st.session_state:
+            model = genai.GenerativeModel(MODEL_NAME)
+            # O Gemini usa o histórico para entender o contexto.
+            # Nós simulamos que o "user" deu a instrução e o "model" entendeu.
+            initial_history = [
+                {'role': 'user', 'parts': [system_instruction]},
+                {'role': 'model', 'parts': [
+                    "Entendido. Olá! Eu sou o Event, o seu assistente virtual para explorar o ecom-web. Como posso ajudar?"]}
+            ]
+            st.session_state.chat = model.start_chat(history=initial_history)
+
+        # ... (o resto do código, como a interface do chat e a função `send_message_to_gemini`, permanece exatamente o mesmo) ...
+
+        # Exibe as mensagens do histórico na interface
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # ... (resto do código igual)
+
+
+        # --- Função para Enviar Mensagem e Obter Resposta ---
+        def send_message_to_gemini(prompt):
+            """Envia a mensagem para a API do Gemini e retorna a resposta."""
             try:
-                api_key = st.secrets["GEMINI_API_KEY"]
-            except (FileNotFoundError, KeyError):
-                # Se não encontrar, solicita ao usuário na barra lateral
-                st.sidebar.header("Configuração")
-                api_key = st.sidebar.text_input(
-                    "Cole sua API Key do Google Gemini aqui:",
-                    type="password",
-                    help="Obtenha sua chave em https://aistudio.google.com/"
-                )
-
-            # Se a chave não for fornecida, exibe um aviso e interrompe a execução
-            if not api_key:
-                st.info("Por favor, insira sua API Key do Google Gemini na barra lateral para começar.")
-                st.stop()
-
-            # Configura a biblioteca do Gemini com a chave fornecida
-            try:
-                genai.configure(api_key=api_key)
+                # O histórico é gerenciado automaticamente pelo objeto `chat`
+                response = st.session_state.chat.send_message(prompt)
+                return response.text
             except Exception as e:
-                st.error(f"Erro ao configurar a API do Gemini: {e}")
-                st.stop()
+                # Trata possíveis erros na chamada da API
+                st.error(f"Ocorreu um erro ao comunicar com a API: {e}")
+                return None
 
-            # --- Inicialização do Modelo e do Histórico da Conversa ---
-            # app.py (modificações em destaque)
+        try:
+            # Captura a entrada do usuário através do st.chat_input
+            if prompt := st.chat_input("Digite sua mensagem..."):
+                # 1. Adiciona e exibe a mensagem do usuário
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                with st.chat_message("user"):
+                    st.markdown(prompt)
 
-
-            # --- NOVO: Instrução Inicial (Contexto) atualizada ---
-            system_instruction = f"""
-            Você é o "Assistente EventsBot", um chatbot especialista no aplicativo web "e-com web  Eventos".
-            Sua função é responder a perguntas sobre as funcionalidades do aplicativo e sobre os resultados financeiros da empresa, com base ESTRITAMENTE nas informações fornecidas.
-        
-            REGRAS:
-            1.  **Persona:** Seja profissional, preciso e direto.
-            2.  **Base de Conhecimento:** NUNCA invente informações. Se a resposta não estiver no contexto que eu fornecer, diga "Não tenho essa informação na minha base de dados."
-            3.  **Segurança:** Nunca partilhe informações financeiras a menos que a pergunta seja explicitamente sobre finanças.
-            4.  **Foco:** Recuse educadamente responder a perguntas que não sejam sobre o e-com web eventos. Sugira que entre em contacto com a agência GHT.
-        
-            Aqui está a base de conhecimento sobre dos Dados:
-            Catálogo: {dados}
-            Mobiliário(Data,	Categorias,	Qtd,	Preço,	Valor): {dados['Mobiliário']}
-            Entretenimento(Data,	Categorias,	Qtd,	Preço,	Valor): {dados['entretenimento']}
-            alimentação(Data,	Categorias,	Qtd,	Preço,	Valor): {dados['alimentação']}
-            Banco de dados: {st.session_state.banco_dados}
-            carrinho: {st.session_state.carrinho}
-            Total de Vendas: {data_base['Valor'].sum()} Mts
-            ---
-        
-            ---
-        
-            Aqui está a base de conhecimento sobre os RESULTADOS FINANCEIROS:
-            ---
-        
-            ---
-            """
-            # --- Inicialização do Modelo e do Histórico da Conversa ---
-
-            MODEL_NAME = "gemini-1.5-flash-latest"
-
-            # MODIFICAÇÃO: Inicia o histórico com a instrução e uma primeira mensagem
-            if "messages" not in st.session_state:
-                st.session_state.messages = [
-                    {"role": "assistant",
-                     "content": "Olá! Eu sou o Event, o seu assistente virtual para explorar o ecom-web. Como posso ajudar?"}
-                ]
-
-            # MODIFICAÇÃO: Passa o histórico inicial para o modelo
-            if "chat" not in st.session_state:
-                model = genai.GenerativeModel(MODEL_NAME)
-                # O Gemini usa o histórico para entender o contexto.
-                # Nós simulamos que o "user" deu a instrução e o "model" entendeu.
-                initial_history = [
-                    {'role': 'user', 'parts': [system_instruction]},
-                    {'role': 'model', 'parts': [
-                        "Entendido. Olá! Eu sou o Event, o seu assistente virtual para explorar o ecom-web. Como posso ajudar?"]}
-                ]
-                st.session_state.chat = model.start_chat(history=initial_history)
-
-            # ... (o resto do código, como a interface do chat e a função `send_message_to_gemini`, permanece exatamente o mesmo) ...
-
-            # Exibe as mensagens do histórico na interface
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
-
-            # ... (resto do código igual)
+                # 2. Envia a mensagem para o Gemini e obtém a resposta
+                with st.chat_message("assistant"):
+                    with st.spinner("Pensando..."):
+                        response_text = send_message_to_gemini(prompt)
+                        if response_text:
+                            st.markdown(response_text)
+                            # 3. Adiciona a resposta do assistente ao histórico
+                            st.session_state.messages.append({"role": "assistant", "content": response_text})
+        except:
+            st.info('Não foi possivel aceder ao EventsBot. Por favor, tente novamentemais tarde.')
 
 
-            # --- Função para Enviar Mensagem e Obter Resposta ---
-            def send_message_to_gemini(prompt):
-                """Envia a mensagem para a API do Gemini e retorna a resposta."""
-                try:
-                    # O histórico é gerenciado automaticamente pelo objeto `chat`
-                    response = st.session_state.chat.send_message(prompt)
-                    return response.text
-                except Exception as e:
-                    # Trata possíveis erros na chamada da API
-                    st.error(f"Ocorreu um erro ao comunicar com a API: {e}")
-                    return None
-
-            try:
-                # Captura a entrada do usuário através do st.chat_input
-                if prompt := st.chat_input("Digite sua mensagem..."):
-                    # 1. Adiciona e exibe a mensagem do usuário
-                    st.session_state.messages.append({"role": "user", "content": prompt})
-                    with st.chat_message("user"):
-                        st.markdown(prompt)
-
-                    # 2. Envia a mensagem para o Gemini e obtém a resposta
-                    with st.chat_message("assistant"):
-                        with st.spinner("Pensando..."):
-                            response_text = send_message_to_gemini(prompt)
-                            if response_text:
-                                st.markdown(response_text)
-                                # 3. Adiciona a resposta do assistente ao histórico
-                                st.session_state.messages.append({"role": "assistant", "content": response_text})
-            except:
-                st.info('Não foi possivel aceder ao EventsBot. Por favor, tente novamentemais tarde.')
-except:
-    st.info('Sem nenhuma informação. Por favor, inicie as operações na e-com web eventos')
 
 
 
