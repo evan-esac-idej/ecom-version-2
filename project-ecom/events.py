@@ -496,9 +496,10 @@ try:
                                 st.session_state.messages.append({"role": "assistant", "content": response_text})
             except:
                 st.empty()
-   except:
-        st.empty()              
+except:
+    st.empty()              
    
+
 
 
 
