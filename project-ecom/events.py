@@ -400,9 +400,26 @@ try:
             # Tenta obter a chave a partir do st.secrets
             try:
                 api_key = st.secrets["GEMINI_API_KEY"]
-                genai.configure(api_key=api_key)
             except (FileNotFoundError, KeyError):
-                st.empty()
+                # Se não encontrar, solicita ao usuário na barra lateral
+                st.sidebar.header("Configuração")
+                api_key = st.sidebar.text_input(
+                    "Cole sua API Key do Google Gemini aqui:",
+                    type="password",
+                    help="Obtenha sua chave em https://aistudio.google.com/"
+                )
+
+            # Se a chave não for fornecida, exibe um aviso e interrompe a execução
+            if not api_key:
+                st.info("Por favor, insira sua API Key do Google Gemini na barra lateral para começar.")
+                st.stop()
+
+            # Configura a biblioteca do Gemini com a chave fornecida
+            try:
+                genai.configure(api_key=api_key)
+            except Exception as e:
+                st.error(f"Erro ao configurar a API do Gemini: {e}")
+                st.stop()
     
     
             # --- NOVO: Instrução Inicial (Contexto) atualizada ---
@@ -499,6 +516,7 @@ try:
 except:
     st.empty()              
    
+
 
 
 
