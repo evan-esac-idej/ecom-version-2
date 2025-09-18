@@ -190,12 +190,15 @@ try:
         exibir_itens(dados['entretenimento'], especiais=['Som', 'DJ', 'Artista ou Banda', 'Fogo de Artifício', 'After Party'], coluna=col_i)
 
         with st.sidebar:
-            if st.button('carregar'):
-                st.session_state.carrinho.extend(st.session_state['df_carregado'].to_dict(orient='records'))
-            st.title('Carrinho')
-            select = st.selectbox('Selecione o número da linha ou index',
-                                  options=pd.DataFrame(st.session_state.carrinho).index)
-            a, b = st.columns(2)
+            try:
+                if st.button('carregar'):
+                    st.session_state.carrinho.extend(st.session_state['df_carregado'].to_dict(orient='records'))
+                st.title('Carrinho')
+                select = st.selectbox('Selecione o número da linha ou index',
+                                      options=pd.DataFrame(st.session_state.carrinho).index)
+                a, b = st.columns(2)
+            except:
+                st.empty()
             with a:
                 if st.button('Eliminar Item'):
                     st.session_state.carrinho.pop(select)
@@ -547,6 +550,7 @@ with tabu:
     st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
 
    
+
 
 
 
