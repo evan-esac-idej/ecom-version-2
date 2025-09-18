@@ -191,9 +191,11 @@ try:
 
         with st.sidebar:
             try:
-                if st.button('carregar'):
-                    st.session_state.carrinho.extend(st.session_state['df_carregado'].to_dict(orient='records'))
-                st.title('Carrinho')
+                if not pd.DataFrame(st.session_state['df_carregado']).empty:
+                    if st.button('Carregar'):
+                        st.session_state.carrinho.extend(
+                            st.session_state['df_carregado'].to_dict(orient='records')
+                        )
                 select = st.selectbox('Selecione o número da linha ou index',
                                       options=pd.DataFrame(st.session_state.carrinho).index)
                 a, b = st.columns(2)
@@ -550,6 +552,7 @@ with tabu:
     st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
 
    
+
 
 
 
