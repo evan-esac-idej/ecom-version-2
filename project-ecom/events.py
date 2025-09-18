@@ -4,6 +4,8 @@ from datetime import datetime
 import plotly.express as px
 from time import sleep
 import os
+import google.generativeai as genai
+import os
 
 
 st.set_page_config(page_title='ecom_events', layout='wide', page_icon='bar_chart')
@@ -502,6 +504,7 @@ with tabo:
                             st.session_state.messages.append({"role": "assistant", "content": response_text})
         except:
             st.info('Não foi possivel aceder ao EventsBot. Por favor, tente novamentemais tarde.')
+
 
 
 
