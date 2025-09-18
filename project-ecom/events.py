@@ -195,16 +195,14 @@ try:
                     if st.button('Carregar'):
                         st.session_state.carrinho.extend(
                             st.session_state['df_carregado'].to_dict(orient='records')
-                        )
-                select = st.selectbox('Selecione o número da linha ou index',
-                                      options=pd.DataFrame(st.session_state.carrinho).index)
-                a, b = st.columns(2)
+                        ) 
             except:
                 st.empty()
+            select = st.selectbox('Selecione o número da linha ou index', options=pd.DataFrame(st.session_state.carrinho).index)
+            a, b = st.columns(2)
             with a:
                 if st.button('Eliminar Item'):
                     st.session_state.carrinho.pop(select)
-
             with b:
                 if st.button('Limpar Dados'):
                     st.session_state.carrinho.clear()
@@ -552,6 +550,7 @@ with tabu:
     st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
 
    
+
 
 
 
