@@ -181,7 +181,7 @@ def exibir_itens(dicionario, especiais=[], coluna=None):
 
 
 # Exemplo de uso no bloco de clientes
-taba, tabe, tabi, tabo = st.tabs(['👥 Cliente', '📈 Financeiro', '🗄️Banco de Dados', '🤖 Assistente'])
+taba, tabe, tabi, tabo, tabu = st.tabs(['👥 Cliente', '📈 Financeiro', '🗄️Banco de Dados', '🤖 Assistente', 'ℹ️ Sobre'])
 try:
     with taba:
         col_a, col_e, col_i = st.columns(3)
@@ -514,8 +514,40 @@ try:
             except:
                 st.empty()
 except:
-    st.empty()              
+    st.empty()    
+with tabu:
+    st.header("📌 Sobre o e-com web eventos")
+    st.write(
+        """
+        O **e-com web eventos** é uma plataforma desenvolvida por Ginélio HT para facilitar a organização, 
+        gestão e personalização de **eventos sociais e corporativos**.  
+        
+        ### 🎯 Objectivo
+        Tornar a experiência de planejar eventos **mais simples, rápida e interativa**, 
+        conectando clientes e fornecedores em um só ambiente digital.
+
+        ### ⚙️ Funcionalidades Principais
+        - 📦 **Catálogo Interativo**: escolha de mobiliário, decoração e serviços com imagens e preços.  
+        - 🛒 **Carrinho de Compras**: seleção rápida de itens com resumo fixo de valores.  
+        - 📊 **Dashboard Financeiro**: acompanhamento das vendas e métricas de crescimento.  
+        - 🤖 **Assistente Virtual (EventBot)**: chatbot inteligente integrado com Gemini para tirar dúvidas.  
+        - 🎨 **Experiência Personalizada**: filtros, busca rápida e categorias colapsáveis.  
+
+        ### 🌟 Diferenciais
+        - Plataforma **intuitiva** e fácil de usar.  
+        - Informações em **tempo real** sobre o evento e finanças.  
+        - Suporte interativo com **IA generativa**.  
+        - Design moderno com animações e efeitos visuais.  
+
+        ---
+        💡 O e-com web eventos foi criado para **revolucionar a forma como os eventos são planejados**, 
+        trazendo tecnologia e praticidade para quem organiza e para quem participa.
+        """
+    )
+    st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
+
    
+
 
 
 
