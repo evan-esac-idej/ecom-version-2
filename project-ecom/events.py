@@ -493,8 +493,8 @@ with tabo:
                             st.markdown(response_text)
                             # 3. Adiciona a resposta do assistente ao histórico
                             st.session_state.messages.append({"role": "assistant", "content": response_text})
-        except:
-            st.info('Não foi possivel aceder ao EventsBot. Por favor, tente novamentemais tarde.')
+   
+
 
 
 
