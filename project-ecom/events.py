@@ -403,15 +403,6 @@ with tabo:
         except (FileNotFoundError, KeyError):
             st.empty()
 
-        # Se a chave não for fornecida, exibe um aviso e interrompe a execução
-        if not api_key:
-            st.info("Por favor, insira sua API Key do Google Gemini na barra lateral para começar.")
-            st.stop()
-
-
-        # --- Inicialização do Modelo e do Histórico da Conversa ---
-        # app.py (modificações em destaque)
-
 
         # --- NOVO: Instrução Inicial (Contexto) atualizada ---
         system_instruction = f"""
@@ -504,6 +495,7 @@ with tabo:
                             st.session_state.messages.append({"role": "assistant", "content": response_text})
         except:
             st.info('Não foi possivel aceder ao EventsBot. Por favor, tente novamentemais tarde.')
+
 
 
 
