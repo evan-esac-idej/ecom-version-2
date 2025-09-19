@@ -82,7 +82,7 @@ with st.sidebar.expander(':blue[*Fazer o upload da folha de dados*]', expanded=T
 
     st.caption('O arquivo deve conter as colunas obrigatórias para ser processado.')
     # Lista de colunas obrigatórias
-    colunas_obrigatorias = ['Data', 'Categorias', 'Qtd', 'Preço', 'Valor']
+    colunas_obrigatorias = ['Data', 'Categorias', 'Qtd', 'Preço', 'Valor', 'Cliente', 'Contacto']
 
     # --- LÓGICA DE VALIDAÇÃO ---
     # Só executa se um arquivo foi efetivamente carregado
@@ -136,21 +136,26 @@ for key in ['max', 'mean', 'aval', 'carrinho', 'len']:
 if 'banco_dados' not in st.session_state:
     st.session_state.banco_dados = []
 
+if 'count' not in st.session_state:
+    st.session_state.count = []
+
 
 # Função para adicionar item ao carrinho
-def adicionar_ao_carrinho(nome, preco, pr):
+def adicionar_ao_carrinho(nome, preco, pr, cliente, contacto):
     df_item = {
         'Data': pd.to_datetime(datetime.now()),
         'Categorias': nome,
         'Qtd': pr,
         'Preço': preco,
-        'Valor': pr * preco
+        'Valor': pr * preco,
+        'Cliente': cliente,
+        'Contacto': contacto
     }
     st.session_state.carrinho.append(df_item)
     st.toast(f"{pr}x{nome} no carrinho ✅!", icon="🎉")
 
 # Função para exibir itens (mob, alim, entr)
-def exibir_itens(dicionario, especiais=[], coluna=None):
+def exibir_itens(cliente, contacto, dicionario, especiais=[], coluna=None):
     with coluna:
         for nome, preco in dicionario.items():
             caminho_pasta = os.path.join(os.path.dirname(__file__), 'images')
@@ -172,10 +177,11 @@ def exibir_itens(dicionario, especiais=[], coluna=None):
                     placeholder = st.empty()
                     if pr == 0:
                         placeholder.warning(f"⚠️ O número de **{nome}** deve ser igual ou maior que 1.")
-                        sleep(1.5)
+                        sleep(3)
                         placeholder.empty()
                     else:
-                        adicionar_ao_carrinho(nome, preco, pr)
+                        adicionar_ao_carrinho(nome, preco, pr, cliente, contacto)
+                        st.session_state.count.append(nome)
             with i:
                 st.write(f':green[Preço: **{preco}** Mts/unit]')
 
@@ -184,10 +190,18 @@ def exibir_itens(dicionario, especiais=[], coluna=None):
 taba, tabe, tabi, tabo, tabu = st.tabs(['👥 Cliente', '📈 Financeiro', '🗄️Banco de Dados', '🤖 Assistente', 'ℹ️ Sobre'])
 try:
     with taba:
+         a, b = st.columns([4, 3])
+        with a:
+            cliente = st.text_input('Designação do Cliente',
+                                    placeholder='Nome completo, Empresas ou Instituição',
+                                    disabled=False, max_chars=45, value=f"{'Nome Sobrenome'}", )
+        with b:
+            contact = st.text_input('Contacto do Cliente', placeholder='e-mail ou +285',
+                                disabled=False, max_chars=25, value=f"{'designação@gmail.com'}")
         col_a, col_e, col_i = st.columns(3)
-        exibir_itens(dados['Mobiliário'], especiais=['Jardim', 'Piscina', 'Decorativos'], coluna=col_a)
-        exibir_itens(dados['alimentação'], especiais=['Bolo'], coluna=col_e)
-        exibir_itens(dados['entretenimento'], especiais=['Som', 'DJ', 'Artista ou Banda', 'Fogo de Artifício', 'After Party'], coluna=col_i)
+        exibir_itens(cliente=cliente, contacto=contact, dicionario=dados['Mobiliário'], especiais=['Jardim', 'Piscina', 'Decorativos'], coluna=col_a)
+        exibir_itens(cliente=cliente, contacto=contact, dicionario=dados['alimentação'], especiais=['Bolo'], coluna=col_e)
+        exibir_itens(cliente=cliente, contacto=contact, dicionario=dados['entretenimento'], especiais=['Som', 'DJ', 'Artista ou Banda', 'Fogo de Artifício', 'After Party'], coluna=col_i)
 
         with st.sidebar:
             try:
@@ -232,6 +246,39 @@ except:
 data_base = pd.DataFrame(st.session_state.banco_dados)
 try:
     with tabe:
+        from collections import Counter
+        # Conta quantas vezes cada item aparece na lista
+        contador = Counter(st.session_state.count)
+        contado = Counter([f""+", ".join([k['Categorias']]) for k in st.session_state.banco_dados if k['Categorias']])
+        # listlinear = [f""+", ".join([k['Categorias']]) for k in st.session_state.banco_dados if k['Categorias']]
+
+        # Mostra os resultados
+        cola, cole, coli, colo = st.columns(4)
+        cont = 0
+        col = cola
+        for item, freq in contador.items():
+            with col:
+                if item in contado:
+                    des = contado[item]-freq
+                    if des < 0:
+                        st.metric(f"Compras efectuadas de **{item}**", f"{contado[item]} ×", f'{des} Desistências')
+                        # st.progress(70)
+                    elif des > 0: st.metric(f"Compras efectuadas de **{item}**", f"{contado[item]} ×", f'{des} Sobre-compras')
+                    else:
+                        st.metric(f"Compras efectuadas de **{item}**", f"{contado[item]} ×", f'{0} Sem desistência', delta_color='off')
+                else:
+                    st.metric(f"Compras efectuadas de **{item}**", f"{0} ×", f'{0-freq} Desistências')
+            if col == cole:
+                col = coli
+            elif col == cola:
+                col = cole
+            else:
+                if col == coli:
+                    col = colo
+                else:
+                    col = cola
+
+        st.divider()
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             try:
@@ -271,18 +318,16 @@ try:
                 growth = 0
             st.metric("Máximo das Vendas", f"{total:,.2f} Mts",  f"{growth:,.2f}%")
         with col4:
-
             try:
                 preview = st.session_state.len[::-1][1]
-                st.metric(":grey[*Total do Pedidos anterior*]", f"{preview:,}")
-                st.divider()
+                st.metric(":grey[*Total do Pedidos anterior*]", f"🎟️{preview:,}")
                 total = len(data_base)
                 growth = ((total - preview) / preview) * 100
             except (IndexError, ZeroDivisionError):
                 preview = 0
                 total = len(data_base)
                 growth = 0
-            st.metric(" Total de Pedidos", f"{total:,}",  f"{growth:,.2f}%")
+            st.metric(" Total de Pedidos", f"🎟️{total:,}",  f"{growth:,.2f}%")
         st.markdown('---')
         col1, col2 = st.columns(2)
         with col1:
@@ -295,35 +340,52 @@ try:
             import plotly.graph_objects as go
 
             cores = [
-                # Tons de Azul
-                "#e3f2fd",  # Azul muito claro
-                "#bbdefb",  # Azul claro
-                "#90caf9",  # Azul suave
-                "#64b5f6",  # Azul médio
-                "#2196f3",  # Azul padrão
-                "#1565c0",  # Azul escuro
-                "#0d47a1",  # Azul profundo
-
-                # Tons de Vermelho
-                "#ffebee",  # Vermelho muito claro
-                "#ffcdd2",  # Vermelho claro
-                "#ef9a9a",  # Vermelho suave
-                "#e57373",  # Vermelho médio
-                "#f44336",  # Vermelho padrão
-                "#c62828",  # Vermelho escuro
+                # Vermelho profundo
                 "#8b0000",  # Vermelho profundo
-                "#4a0000"  # Vermelho quase vinho
+                # Azul escuro
+                "#001f3f",  # Azul carregado escuro
+                # Vermelho intenso
+                "#b71c1c",  # Vermelho intenso
+                # Azul médio-escuro
+                "#003366",  # Azul carregado médio-escuro
+                # Vermelho padrão
+                "#d32f2f",  # Vermelho padrão
+                # Azul carregado médio
+                "#004080",  # Azul carregado médio
+                # Vermelho médio
+                "#e53935",  # Vermelho médio
+                # Azul padrão
+                "#0059b3",  # Azul carregado padrão
+                # Vermelho suave
+                "#ef5350",  # Vermelho suave
+                # Azul claro
+                "#3399ff",  # Azul carregado claro
+                # Vermelho muito claro
+                "#ffcdd2",  # Vermelho muito claro
+                # Azul muito claro
+                "#99ccff",  # Azul carregado muito claro
             ]
 
-            fig = go.Figure(data=[go.Pie(title='Percentagem de cada categoria',
+            fig = go.Figure(data=[go.Pie(
                 labels=data_base['Categorias'],
                 values=data_base['Valor'],
-                hole=0.5,
+                hole=0.4,
                 marker=dict(colors=cores),  # aplica cores fixas
-                pull=[0, 0.1, 0, 0.3]
+                pull=[0.4, 0.5, 0.5, 0.3]
             )])
-            fig.update_traces(textposition='inside', textinfo='percent')
+            fig.update_layout(
+                title={
+                    'text': "Distribuição de Vendas por Categoria",
+                    'y': 0.95,  # posição vertical (0=base, 1=topo)
+                    'x': 0.5,  # centralizado horizontalmente
+                    'xanchor': 'center',
+                    'yanchor': 'top'
+                },
+                title_font_size=20
+            )
+            fig.update_traces(textposition='outside', textinfo='label+percent',)
             st.plotly_chart(fig, use_container_width=True)
+
 
         col1, col2 = st.columns(2)
         with col1:
@@ -337,38 +399,75 @@ try:
                           title="Produtos por Receita", text="Valor")
             figh.update_traces(textposition='inside')
             st.plotly_chart(figh, use_container_width=True)
-        st.markdown('---')
-        group_lis = st.multiselect('Verificar o Valor Total em:', options=data_base.columns, default='Data')
-        grouped = data_base.groupby(group_lis)['Valor'].sum()
-        df_grouped = pd.DataFrame(grouped)
-        df_ = df_grouped.rename(columns={'Valor': 'Valor total'})
-        with st.expander(''):
-            st.dataframe(df_)
-
-        st.markdown('---')
-
-        cat = st.multiselect('Selecione a(s) Categoria(s) para análise', options=data_base['Categorias'].unique(),)
-
-
-        df_filt = data_base.query('Categorias == @cat')
-        col1, col2, col3 = st.columns(3)
+       col1, col2 = st.columns(2)
         with col1:
-            sum_cat = df_filt['Valor'].sum()
-            total = data_base['Valor'].sum()
-            per_cat = (sum_cat / total) * 100
-            st.metric(f"Total de Vendas de "+", ".join(cat), f"{df_filt['Valor'].sum():,.2f} Mts",
-                      f"{per_cat:.2f}% dos produtos")
-
+            import plotly.graph_objects as go
+            clientes = data_base["Cliente"].nunique()
+            meta_clientes = 10
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number+delta",
+                value=clientes,
+                delta={'reference': meta_clientes},
+                gauge={
+                    'axis': {'range': [0, 20]},
+                    'bar': {'color': "green"},
+                    'steps': [
+                        {'range': [0, 5], 'color': "white"},
+                        {'range': [5, 10], 'color': "white"},
+                        {'range': [10, 20], 'color': "white"}
+                    ]
+                },
+                title={'text': "Clientes Activos"}
+            ))
+            st.plotly_chart(fig, use_container_width=True)
+            
         with col2:
-            qtd_total = df_filt['Qtd'].sum()
-            total = data_base['Qtd'].sum()
-            per_cat = (qtd_total / total) * 100
-            st.metric("Qtd Vendidas", f"{qtd_total:,.2f} Unidades", f"{per_cat:,.2f}% das unidades")
+            fig = go.Figure(go.Indicator(
+                mode="number+delta",
+                value=data_base['Qtd'].sum(),
+                delta={'reference': 380, 'relative': True},
+                title={"text": "Total de Unidades Vendidas"},
+                number={'suffix': "📦"}
+            ))
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with st.expander('**Analise Geral** ~ Agrupamento de dados'):
+            try:
+                group_lis = st.multiselect('Verificar o Valor Total em:', options=data_base.columns, default='Data')
+                grouped = data_base.groupby(group_lis)['Valor'].sum()
+                df_grouped = pd.DataFrame(grouped)
+                df_ = df_grouped.rename(columns={'Valor': 'Valor total'})
+                st.dataframe(df_, use_container_width=True)
+                fig_bar = px.bar(data_base.groupby(group_lis[0])["Valor"].sum().sort_values(ascending=False).reset_index()
+                                 , x=group_lis[0], y="Valor",
+                                 title=f"Produtos mais vendidos por {group_lis[0]}", text='Valor', color='Valor')
+                fig_bar.update_traces(textposition='outside')
+                st.plotly_chart(fig_bar, use_container_width=True)
+            except:
+                st.empty()
+        with st.expander('**Analise Minunciosa** ~ Ajustamento de dados'):
+            col = st.selectbox('Selecione a Variável para análise', options=data_base.columns, )
+            obs = st.multiselect(f'Selecione a {col} para análise', options=data_base[col].unique(), )
+            df_filt = data_base.query(f'{col} in @obs')
+            st.dataframe(df_filt)
 
-        with col3:
-            total = df_filt['Valor'].max()
-            st.metric("Máximo de venda em Dia", f"{total:,.2f} Mts", f"{growth:,.2f}%")
-        st.dataframe(df_filt)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                sum_cat = df_filt['Valor'].sum()
+                total = data_base['Valor'].sum()
+                per_obs = (sum_cat / total) * 100
+                st.metric(f"Total de Vendas", f"{sum_cat:,.2f} Mts",
+                          f"Peso de {per_obs:.2f}% dos produtos")
+
+            with col2:
+                qtd_total = df_filt['Qtd'].sum()
+                total = data_base['Qtd'].sum()
+                per_cat = (qtd_total / total) * 100
+                st.metric("Qtd Vendidas", f"{qtd_total} Unidades", f"Peso de {per_cat:,.2f}% das unidades")
+
+            with col3:
+                total = df_filt['Valor'].max()
+                st.metric("Máximo de venda em Dia", f"{total:,.2f} Mts", f"{growth:,.2f}%")
 except:
     st.warning('Adicione produtos a carrinha e no banco de dados...')
     st.empty()
@@ -550,6 +649,7 @@ with tabu:
     st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
 
    
+
 
 
 
