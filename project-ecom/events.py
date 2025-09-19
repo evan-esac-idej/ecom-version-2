@@ -399,7 +399,7 @@ try:
                           title="Produtos por Receita", text="Valor")
             figh.update_traces(textposition='inside')
             st.plotly_chart(figh, use_container_width=True)
-       col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
         with col1:
             import plotly.graph_objects as go
             clientes = data_base["Cliente"].nunique()
@@ -649,6 +649,7 @@ with tabu:
     st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
 
    
+
 
 
 
