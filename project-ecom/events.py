@@ -431,7 +431,7 @@ try:
             ))
             st.plotly_chart(fig, use_container_width=True)
             
-        with st.expander('**Analise Geral** ~ Agrupamento de dados'):
+        with st.expander('**Análise Geral** ~ Agrupamento de dados'):
             try:
                 group_lis = st.multiselect('Verificar o Valor Total em:', options=data_base.columns, default='Data')
                 grouped = data_base.groupby(group_lis)['Valor'].sum()
@@ -445,7 +445,7 @@ try:
                 st.plotly_chart(fig_bar, use_container_width=True)
             except:
                 st.empty()
-        with st.expander('**Analise Minunciosa** ~ Ajustamento de dados'):
+        with st.expander('**Análise Minunciosa** ~ Ajustamento de dados'):
             col = st.selectbox('Selecione a Variável para análise', options=data_base.columns, )
             obs = st.multiselect(f'Selecione a {col} para análise', options=data_base[col].unique(), )
             df_filt = data_base.query(f'{col} in @obs')
@@ -649,6 +649,7 @@ with tabu:
     st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
 
    
+
 
 
 
