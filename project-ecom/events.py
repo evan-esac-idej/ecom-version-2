@@ -190,7 +190,7 @@ def exibir_itens(cliente, contacto, dicionario, especiais=[], coluna=None):
 taba, tabe, tabi, tabo, tabu = st.tabs(['👥 Cliente', '📈 Financeiro', '🗄️Banco de Dados', '🤖 Assistente', 'ℹ️ Sobre'])
 try:
     with taba:
-         a, b = st.columns([4, 3])
+        a, b = st.columns([4, 3])
         with a:
             cliente = st.text_input('Designação do Cliente',
                                     placeholder='Nome completo, Empresas ou Instituição',
@@ -649,6 +649,7 @@ with tabu:
     st.success("✅ Explore as outras abas para conhecer todas as funcionalidades!")
 
    
+
 
 
 
